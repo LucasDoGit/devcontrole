@@ -68,6 +68,4 @@ export async function DELETE(request: Request){
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete customer "}, { status: 400 })
   }
-
-  return NextResponse.json({ ok: true })
 }
