@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form'
 
 import { FiSearch, FiX } from "react-icons/fi"
 import { FormTicket } from "./components/FormTicket"
+import { api } from '@/lib/api'
 
 const schema = z.object({
     email: z.string().email("Digite o email do cliente para localizar.").min(1, "O campo email é obrigatório")
@@ -15,7 +16,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-interface CustomerDataInfo {
+export interface CustomerDataInfo {
     id: string;
     name: string;
 }
@@ -23,14 +24,34 @@ interface CustomerDataInfo {
 export default function OpenTicket(){
     const [customer, setCustomer] = useState<CustomerDataInfo | null>(null)
 
+    const { register, handleSubmit, setValue, setError, formState: { errors } } = useForm<FormData>({
+        resolver: zodResolver(schema) 
+    })
+
     function handleClearCustomer(){
         setCustomer(null)
         setValue("email", "")
     }
 
-    const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
-        resolver: zodResolver(schema) 
-    })
+    async function handleSearchCustomer(data: FormData){
+        const response = await api.get("/api/customer", {
+            params: {
+                email: data.email
+            }
+        })
+
+        if(response.data === null){
+            setError("email", { type: "custom", message: "Ops, cliente não foi encontrado!"})
+            return;
+        }
+
+        setCustomer({
+            id: response.data.id,
+            name: response.data.name
+        })
+    }
+
+    
     return(
         <div className="w-full max-w-2xl mx-auto px-2">
             <h1 className="font-bold text-3xl text-center mt-24">Abrir chamado</h1>
@@ -48,7 +69,10 @@ export default function OpenTicket(){
                         </button>
                     </div>
                 ) : (
-                    <form className="bg-slate-200 py-6 px-2 rounded border-2">
+                    <form 
+                        className="bg-slate-200 py-6 px-2 rounded border-2"
+                        onSubmit={handleSubmit(handleSearchCustomer)}
+                    >
 
                     <div className="flex flex-col gap-3">
                         <Input
@@ -70,7 +94,7 @@ export default function OpenTicket(){
                     </form>
                 )}
 
-                {customer !== null && <FormTicket/>}
+                {customer !== null && <FormTicket customer={customer} />}
 
             </main>
         </div>
